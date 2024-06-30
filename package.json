@@ -1,0 +1,19 @@
+{
+  "name": "com.luislabs.smartscene",
+  "displayName": "Smart Scene Library",
+  "description": "A library to help you manage your scenes in Unity",
+  "version": "1.0.0",
+  "unity": "2022.3",
+  "keywords": [
+    "scene",
+    "smart",
+    "library"
+  ],
+  "category": "Tools",
+  "dependencies": {},
+  "author": {
+    "name": "Luis Henrique da Silva Moreira",
+    "url": "https://github.com/Louiixx-h"
+  },
+  "documentationUrl": "https://github.com/Louiixx-h/smart-scene-unity/blob/main/README.md"
+}
