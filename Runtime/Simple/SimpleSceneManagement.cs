@@ -15,9 +15,9 @@ namespace LuisLabs.SmartScene
             StartCoroutine(LoadSingleSceneOperationAsync(scene, mode));
         }
 
-        public void SwitchSceneAsync(GameObject gameObj, string sceneName)
+        public void SwitchSceneAsync(string currentScene, string sceneName)
         {
-            StartCoroutine(SwitchOperationAsync(gameObj, sceneName));
+            StartCoroutine(SwitchOperationAsync(currentScene, sceneName));
         }
         
         private IEnumerator LoadSingleSceneOperationAsync(string sceneName, LoadSceneMode mode)
@@ -29,11 +29,11 @@ namespace LuisLabs.SmartScene
             yield return null;
         }
 
-        private IEnumerator SwitchOperationAsync(GameObject gameObj, string sceneName)
+        private IEnumerator SwitchOperationAsync(string currentScene, string sceneName)
         {
             yield return null;
             OnLoadingStart?.Invoke();
-            yield return UnloadSceneCoroutine(gameObj.scene.name);
+            yield return UnloadSceneCoroutine(currentScene);
             yield return LoadSceneCoroutine(sceneName);
             OnLoadingEnd?.Invoke();
             yield return null;

@@ -9,6 +9,6 @@ namespace LuisLabs.SmartScene
         public Action OnLoadingStart { get; set; }
         public Action OnLoadingEnd { get; set; }
         public void LoadSceneAsync(string scene, LoadSceneMode mode = LoadSceneMode.Additive);
-        public void SwitchSceneAsync(GameObject gameObj, string sceneName);
+        public void SwitchSceneAsync(string currentScene, string sceneName);
     }
 }
