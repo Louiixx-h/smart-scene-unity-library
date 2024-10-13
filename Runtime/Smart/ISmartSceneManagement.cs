@@ -11,15 +11,15 @@ namespace LuisLabs.SmartScene
     {
         public Action OnLoadingStart { get; set; }
         public Action OnLoadingEnd { get; set; }
-        public IList<string> SceneGroup { get; }
-        public IList<string> PersistentScenes { get; }
+        public IList<string> CurrentSceneGroup { get; }
+        public IList<string> CurrentPersistentScenes { get; }
         public Scene ActiveScene { get; }
         public int SceneCount { get; }
         public Scene GetSceneAt(int index);
-        public void SwitchSceneGroupAsync(SceneConfig sceneConfig);
-        public void LoadSceneToCurrentGroupAsync(SceneConfig sceneConfig);
-        public void LoadPersistentSceneAsync(SceneConfig sceneConfig);
-        public void UnloadSceneAsync(string sceneName);
-        public void UnloadPersistentSceneAsync(string sceneName);
+        public IEnumerator SwitchSceneGroupAsync(SceneConfig sceneConfig);
+        public IEnumerator LoadSceneToCurrentGroupAsync(SceneConfig sceneConfig);
+        public IEnumerator LoadPersistentSceneAsync(SceneConfig sceneConfig);
+        public IEnumerator UnloadSceneAsync(string sceneName);
+        public IEnumerator UnloadPersistentSceneAsync(string sceneName);
     }
 }
