@@ -1,45 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.SceneManagement;
 
-namespace LuisLabs.SmartScene
+namespace Com.LuisLabs.SmartScene
 {
+    /// <summary>
+    /// Configuration for loading scenes.
+    /// </summary>
     public class SceneConfig
     {
-        public LoadSceneMode LoadSceneMode { get; set; }
         public IProgress<float> Progress { get; set; }
-        public IList<string> Scenes { get; set; }
+        public SceneGroupData SceneGroup { get; set; }
         public bool IgnoreIfAlreadyLoaded { get; set; }
 
         private SceneConfig(
-            LoadSceneMode loadSceneMode, 
-            IProgress<float> progress, 
-            IList<string> scenes,
+            IProgress<float> progress,
+            SceneGroupData sceneGroup,
             bool ignoreIfAlreadyLoaded)
         {
-            LoadSceneMode = loadSceneMode;
             Progress = progress;
-            Scenes = scenes;
+            SceneGroup = sceneGroup;
             IgnoreIfAlreadyLoaded = ignoreIfAlreadyLoaded;
         }
-        
+
+        /// <summary>
+        /// Builder class for SceneConfig.
+        /// </summary>
         public class SceneConfigBuilder
         {
-            private LoadSceneMode _loadSceneMode;
             private IProgress<float> _progress;
-            private IList<string> _scenes;
+            private SceneGroupData _sceneGroup;
             private bool _ignoreIfAlreadyLoaded;
 
-            public SceneConfigBuilder SetScenes(IList<string> scenes)
+            public SceneConfigBuilder SetSceneGroup(SceneGroupData sceneGroup)
             {
-                _scenes = scenes.ToList();
-                return this;
-            }
-
-            public SceneConfigBuilder SetLoadSceneMode(LoadSceneMode loadSceneMode)
-            {
-                _loadSceneMode = loadSceneMode;
+                _sceneGroup = sceneGroup;
                 return this;
             }
 
@@ -48,7 +41,7 @@ namespace LuisLabs.SmartScene
                 _progress = progress;
                 return this;
             }
-            
+
             public SceneConfigBuilder SetIgnoreIfAlreadyLoaded(bool ignoreIfAlreadyLoaded)
             {
                 _ignoreIfAlreadyLoaded = ignoreIfAlreadyLoaded;
@@ -58,9 +51,8 @@ namespace LuisLabs.SmartScene
             public SceneConfig Build()
             {
                 return new SceneConfig(
-                    loadSceneMode: _loadSceneMode, 
                     progress: _progress,
-                    scenes: _scenes,
+                    sceneGroup: _sceneGroup,
                     ignoreIfAlreadyLoaded: _ignoreIfAlreadyLoaded);
             }
         }

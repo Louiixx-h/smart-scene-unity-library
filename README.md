@@ -1,196 +1,220 @@
-# Smart Scene Library Documentation
+# SmartScene - Gerenciamento de Cenas na Unity
 
-## Overview
+A **SmartScene** é uma biblioteca para Unity que facilita o gerenciamento de cenas, permitindo agrupar cenas em "Scene Groups" e carregá-las de forma assíncrona. Ela é ideal para projetos que exigem carregamento dinâmico de cenas, como jogos com múltiplas fases, interfaces de usuário complexas ou sistemas de carregamento progressivo.
 
-The `SmartSceneManagement` library is a utility for managing scene transitions in Unity projects. It provides methods to switch scene groups, load scenes into the current group, and manage persistent scenes asynchronously. The library also includes events for handling the start and end of the loading process.
+---
 
-## Installation
+## Instalação
 
-To use the `SmartSceneManagement` library in your Unity project, follow these steps:
+### Passo a Passo para Instalar via Package Manager
 
-1. Go to `Package Manager` on Unity.
-2. Click on plus button and Select `Add package from git URL`.
-3. Paste the `https://github.com/Louiixx-h/smart-scene-unity.git` and press Add button.
+1. Abra o Unity e navegue até o **Package Manager**:
+  - No menu superior, clique em `Window > Package Manager`.
 
-## Usage
+2. No Package Manager, clique no botão **"+"** no canto superior esquerdo e selecione **"Add package from git URL..."**.
 
-### Setting Up
+3. Insira o seguinte Git URL:
+   ```
+   https://github.com/Louiixx-h/smart-scene-unity-library.git
+   ```
 
-1. **Attach the `SmartSceneManagement` Script:**
-   - Attach the `SmartSceneManagement` script to a GameObject in your bootstrapper scene.
+4. Clique em **"Add"**. O Unity baixará e importará automaticamente a biblioteca **SmartScene** para o seu projeto.
 
-2. **Create Scene Groups:**
-   - Define scene groups as lists of scene names.
-   - Use the `SceneConfig` class to configure scene loading options.
+5. Aguarde o processo de importação ser concluído. A biblioteca estará pronta para uso!
 
-### How to use SmartSceneManagement example
+---
+
+## Como Usar
+
+### 1. Criando um Scene Group
+
+Um `Scene Group` é uma lista de cenas que podem ser carregadas juntas. Para criar um, use o `SceneGroupDataSo` (ScriptableObject).
+
+#### Passos:
+
+1. No Unity, clique com o botão direito no **Project Window** e selecione `Create > SmartScene > SceneGroupDataSo`.
+2. Nomeie o arquivo (por exemplo, `InitialSceneGroup`).
+3. No Inspector, defina o nome do grupo e a lista de cenas.
+
+---
+
+### 2. Usando `SceneGroupDataSO` no `SceneConfig`
+
+Para usar os dados de um `SceneGroupDataSO` no `SceneConfig`, você pode acessar o método `GetData()` do `SceneGroupDataSO`. Aqui está um exemplo:
 
 ```csharp
-using System;
-using System.Collections.Generic;
-using LuisLabs.SmartScene;
+// Suponha que você tenha uma referência ao SceneGroupDataSO
+[SerializeField] private SceneGroupDataSo sceneGroupDataSo;
+
+// Crie um SceneConfig usando o SceneGroupDataSO
+var sceneConfig = new SceneConfig.SceneConfigBuilder()
+    .SetSceneGroup(sceneGroupDataSo.GetData()) // Obtém os dados do SceneGroupDataSO
+    .SetProgress(new Progress<float>(progress => Debug.Log($"Progress: {progress * 100}%")))
+    .SetIgnoreIfAlreadyLoaded(true)
+    .Build();
+```
+
+#### Explicação:
+
+- **`sceneGroupDataSo.GetData()`**: Retorna o `SceneGroupData` (struct) armazenado no `SceneGroupDataSO`.
+- **`SetSceneGroup`**: Define o grupo de cenas a ser carregado.
+- **`SetProgress`**: Define um objeto para reportar o progresso do carregamento.
+- **`SetIgnoreIfAlreadyLoaded`**: Ignora cenas já carregadas, se necessário.
+
+---
+
+### 3. Configurando o `GameManager`
+
+O `GameManager` é responsável por iniciar o carregamento das cenas e gerenciar os eventos de carregamento. Aqui está um exemplo de implementação:
+
+```csharp
+using Com.LuisLabs.SmartScene;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
-namespace _Project.Scripts
+public class GameManager : PersistentSingleton<GameManager>
 {
-    public class SmartSceneLoaderController : MonoBehaviour
+    [SerializeField] private SceneGroupDataSo initialSceneGroupData; // Referência ao ScriptableObject no Inspector
+    
+    private ISmartSceneManagement _smartSceneManagement;
+
+    protected override void Awake()
     {
-        [SerializeField] private List<SceneGroupData> groups;
-        [SerializeField] private Image progressBar;
-        [SerializeField] private GameObject loadingScreen;
-        [SerializeField] private Camera mainCamera;
-    
-        private ISmartSceneManagement _smartSceneManagement;
-    
-        public void Awake()
-        {
-            _smartSceneManagement = GetComponent<SmartSceneManagement>();
-            _smartSceneManagement.OnLoadingStart += OnLoadingStart;
-            _smartSceneManagement.OnLoadingEnd += OnLoadingEnd;
-        }
-    
-        private void OnDestroy()
-        {
-            _smartSceneManagement.OnLoadingStart -= OnLoadingStart;
-            _smartSceneManagement.OnLoadingEnd -= OnLoadingEnd;
-        }
+        base.Awake();
+        _smartSceneManagement = GetComponent<SmartSceneManagement>(); // Obtém o gerenciador de cenas
+    }
 
-        private void Start()
-        {
-            SwitchSceneGroup(groups[0].name);
-        }
+    private void Start()
+    {
+        // Carrega o grupo de cenas inicial
+        SwitchSceneGroup(initialSceneGroupData);
+    }
 
-        private void OnLoadingStart()
-        {
-            mainCamera.gameObject.SetActive(true);
-            loadingScreen.SetActive(true);
-        }
+    private void OnEnable()
+    {
+        // Inscreve-se nos eventos de carregamento
+        _smartSceneManagement.OnLoadingStart += OnLoadingStart;
+        _smartSceneManagement.OnLoadingEnd += OnLoadingEnd;
+    }
     
-        private void OnLoadingEnd()
-        {
-            mainCamera.gameObject.SetActive(false);
-            loadingScreen.SetActive(false);
-        }
+    private void OnDisable()
+    {
+        // Remove a inscrição nos eventos de carregamento
+        _smartSceneManagement.OnLoadingStart -= OnLoadingStart;
+        _smartSceneManagement.OnLoadingEnd -= OnLoadingEnd;
+    }
 
-        public void SwitchSceneGroup(string groupName)
-        {
-            progressBar.fillAmount = 0;
-            var scenes = groups.Find(group => group.name == groupName).scenes;
-            var builder = new SceneConfig.SceneConfigBuilder()
-                .SetScenes(scenes)
-                .SetLoadSceneMode(LoadSceneMode.Additive)
-                .SetProgress(new Progress<float>(progress => progressBar.fillAmount = progress));
-            var sceneConfig = builder.Build();
-            _smartSceneManagement.SwitchSceneGroupAsync(sceneConfig);
-        }
+    /// <summary>
+    /// Troca para um novo grupo de cenas.
+    /// </summary>
+    /// <param name="sceneGroupData">O ScriptableObject contendo o grupo de cenas.</param>
+    public void SwitchSceneGroup(SceneGroupDataSo sceneGroupData)
+    {
+        var sceneConfig = new SceneConfig.SceneConfigBuilder()
+            .SetSceneGroup(sceneGroupData.GetData()) // Obtém os dados do grupo de cenas
+            .Build();
+
+        // Inicia o carregamento assíncrono
+        StartCoroutine(_smartSceneManagement.SwitchSceneGroupAsync(sceneConfig));
+    }
     
-        public void LoadSceneToCurrentGroup(string sceneName)
-        {
-            var builder = new SceneConfig.SceneConfigBuilder()
-                .SetScenes(new List<string> { sceneName })
-                .SetLoadSceneMode(LoadSceneMode.Additive)
-                .SetIgnoreIfAlreadyLoaded(true);
-            var sceneConfig = builder.Build();
-            _smartSceneManagement.LoadSceneToCurrentGroupAsync(sceneConfig);
-        }
+    private void OnLoadingStart()
+    {
+        Debug.Log("Loading started"); // Log quando o carregamento começa
+    }
     
-        public void LoadPersistentScene(string sceneName)
-        {
-            var builder = new SceneConfig.SceneConfigBuilder()
-                .SetScenes(new List<string> { sceneName })
-                .SetLoadSceneMode(LoadSceneMode.Additive)
-                .SetIgnoreIfAlreadyLoaded(true);
-            var sceneConfig = builder.Build();
-            _smartSceneManagement.LoadPersistentSceneAsync(sceneConfig);
-        }
-    
-        public void UnloadScene(string sceneName)
-        {
-            _smartSceneManagement.UnloadSceneAsync(sceneName);
-        }
-    
-        public void UnloadPersistentScene(string sceneName)
-        {
-            _smartSceneManagement.UnloadPersistentSceneAsync(sceneName);
-        }
+    private void OnLoadingEnd()
+    {
+        Debug.Log("Loading ended"); // Log quando o carregamento termina
     }
 }
 ```
 
-### Key Methods
+#### Explicação:
 
-- **SwitchSceneGroupAsync(SceneConfig sceneConfig)**
-  - Unload the current scene group to load a new group of scenes.
-  - Usage:
-    ```csharp
-    var sceneConfig = new SceneConfig.SceneConfigBuilder()
-        .SetScenes(new List<string> { "Scene1", "Scene2" })
-        .SetLoadSceneMode(LoadSceneMode.Additive)
-        .SetProgress(new Progress<float>(progress => progressBar.fillAmount = progress))
-        .Build();
-    _smartSceneManagement.SwitchSceneGroupAsync(sceneConfig);
-    ```
+- **PersistentSingleton**: Garante que o `GameManager` persista entre cenas e tenha apenas uma instância.
+- **SceneGroupDataSo**: Referência ao ScriptableObject que contém o grupo de cenas inicial.
+- **SwitchSceneGroup**: Método para trocar o grupo de cenas ativo.
+- **Eventos de Carregamento**: `OnLoadingStart` e `OnLoadingEnd` são usados para notificar o início e o fim do carregamento.
 
-- **LoadSceneToCurrentGroupAsync(SceneConfig sceneConfig)**
-  - Loads additional scenes into the current group.
-  - Usage:
-    ```csharp
-    var sceneConfig = new SceneConfig.SceneConfigBuilder()
-        .SetScenes(new List<string> { "AdditionalScene" })
-        .SetLoadSceneMode(LoadSceneMode.Additive)
-        .SetIgnoreIfAlreadyLoaded(true)
-        .Build();
-    _smartSceneManagement.LoadSceneToCurrentGroupAsync(sceneConfig);
-    ```
+---
 
-- **LoadPersistentSceneAsync(SceneConfig sceneConfig)**
-  - Loads scenes that should persist across different scene groups.
-  - Usage:
-    ```csharp
-    var sceneConfig = new SceneConfig.SceneConfigBuilder()
-        .SetScenes(new List<string> { "PersistentScene" })
-        .SetLoadSceneMode(LoadSceneMode.Additive)
-        .SetIgnoreIfAlreadyLoaded(true)
-        .Build();
-    _smartSceneManagement.LoadPersistentSceneAsync(sceneConfig);
-    ```
+### 4. Configurando o `SmartSceneManagement`
 
-- **UnloadSceneAsync(string sceneName)**
-  - Unloads a scene from the current group.
-  - Usage:
-    ```csharp
-    _smartSceneManagement.UnloadSceneAsync("SceneName");
-    ```
+Adicione o componente `SmartSceneManagement` ao mesmo GameObject que contém o `GameManager`. Isso permitirá que o `GameManager` acesse e controle o carregamento de cenas.
 
-- **UnloadPersistentSceneAsync(string sceneName)**
-  - Unloads a persistent scene.
-  - Usage:
-    ```csharp
-    _smartSceneManagement.UnloadPersistentSceneAsync("PersistentSceneName");
-    ```
+---
 
-## Events
+### 5. Criando e Configurando o `SceneGroupDataSo`
 
-- **OnLoadingStart**
-  - Event triggered when a scene loading process starts.
-- **OnLoadingEnd**
-  - Event triggered when a scene loading process ends.
+1. Crie um `SceneGroupDataSo` no Unity (como explicado na seção 3).
+2. Defina as cenas que devem ser carregadas no grupo (por exemplo, `MainMenu`, `UI`, `Logic`).
+3. Arraste o `SceneGroupDataSo` criado para o campo `initialSceneGroupData` no Inspector do `GameManager`.
 
-## Contributing
+---
 
-Feel free to contribute to the project by submitting issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
+### 6. Executando o Projeto
 
-## License
+Ao iniciar o jogo, o `GameManager` carregará automaticamente o grupo de cenas definido em `initialSceneGroupData`. Você verá logs no console indicando o início e o fim do carregamento.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+---
 
-## Acknowledgments
+## Documentação da API
 
-- C# Language
-- C# Coroutines
-- Unity Documentation
-- [SceneManager](https://docs.unity3d.com/ScriptReference/SceneManagement.SceneManager.html) in Unity
+### `SmartSceneManagement`
 
-This documentation covers the basic usage and setup of the `SmartSceneManagement` library. For more advanced usage, refer to the source code and Unity's official documentation.
+- **Propriedades**:
+  - `CurrentSceneGroup`: Grupo de cenas atualmente carregadas.
+  - `CurrentPersistentSceneGroup`: Grupo de cenas persistentes carregadas.
+  - `ActiveScene`: Cena ativa no momento.
+  - `SceneCount`: Número de cenas carregadas.
+  - `OnLoadingStart`: Evento disparado ao iniciar o carregamento.
+  - `OnLoadingEnd`: Evento disparado ao finalizar o carregamento.
+
+- **Métodos**:
+  - `SwitchSceneGroupAsync(SceneConfig)`: Troca para um novo grupo de cenas.
+  - `LoadSceneToCurrentGroupAsync(SceneConfig)`: Adiciona cenas ao grupo atual.
+  - `LoadPersistentSceneAsync(SceneConfig)`: Carrega cenas persistentes.
+  - `UnloadSceneAsync(string)`: Descarrega uma cena do grupo atual.
+  - `UnloadPersistentSceneAsync(string)`: Descarrega uma cena persistente.
+  - `GetSceneAt(int)`: Retorna a cena no índice especificado.
+
+### `SceneConfig`
+
+- **Propriedades**:
+  - `Progress`: Objeto para reportar o progresso do carregamento.
+  - `SceneGroup`: Grupo de cenas a serem carregadas.
+  - `IgnoreIfAlreadyLoaded`: Ignora cenas já carregadas.
+
+- **Builder**:
+  - `SetSceneGroup(SceneGroupData)`: Define o grupo de cenas.
+  - `SetProgress(IProgress<float>)`: Define o objeto de progresso.
+  - `SetIgnoreIfAlreadyLoaded(bool)`: Define se cenas já carregadas devem ser ignoradas.
+  - `Build()`: Constrói o objeto `SceneConfig`.
+
+### `SceneGroupDataSo`
+
+- **Métodos**:
+  - `GetData()`: Retorna o `SceneGroupData` armazenado no ScriptableObject.
+
+---
+
+## Exemplo Completo
+
+Aqui está um exemplo completo de como usar a biblioteca com o `GameManager`:
+
+1. Crie um `SceneGroupDataSo` chamado `InitialSceneGroup` e defina as cenas `MainMenu`, `UI` e `Logic`.
+2. Adicione o `GameManager` e o `SmartSceneManagement` a um GameObject na cena.
+3. Arraste o `InitialSceneGroup` para o campo `initialSceneGroupData` no Inspector do `GameManager`.
+4. Execute o projeto. O grupo de cenas será carregado automaticamente, e você verá logs no console indicando o progresso.
+
+---
+
+## Contribuindo
+
+Se você quiser contribuir para o projeto, sinta-se à vontade para abrir uma **issue** ou enviar um **pull request**. Todas as contribuições são bem-vindas!
+
+---
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
