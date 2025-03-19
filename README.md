@@ -158,6 +158,15 @@ Ao iniciar o jogo, o `GameManager` carregará automaticamente o grupo de cenas d
 
 ---
 
+Exemplos e Tutoriais
+Para um exemplo completo de como usar a biblioteca SmartScene, confira o repositório de Sample:
+
+🔗 Smart Scene Unity Library Sample
+
+O repositório de Sample contém um projeto Unity funcional que demonstra como configurar e usar a biblioteca em um cenário real. Siga as instruções no README.md do repositório para começar.
+
+---
+
 ## Documentação da API
 
 ### `SmartSceneManagement`
