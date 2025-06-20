@@ -1,7 +1,3 @@
-Aqui está o arquivo **CHANGELOG.md** atualizado com todas as alterações que discutimos neste chat. As mudanças foram agrupadas em uma única versão (`1.3.0`), que inclui todas as melhorias e funcionalidades adicionadas.
-
----
-
 # Changelog
 
 ## [1.0.0] - 2024-06-30
